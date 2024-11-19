@@ -21,6 +21,20 @@
                 </div>
             </div>
         </div>
+        <div class="flex items-center space-x-4">
+            <button 
+                onclick="generateBackup()" 
+                class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded flex items-center"
+            >
+                <span>Generar Backup</span>
+            </button>
+            <button 
+                onclick="logout()" 
+                class="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded"
+            >
+                Cerrar Sesión
+            </button>
+        </div>
     </nav>
 
     <!-- Content -->
@@ -223,7 +237,14 @@
             localStorage.removeItem('user');
             window.location.href = '/';
         }
-
+        async function generateBackup() {
+            try {
+                window.location.href = '/api/backup';
+            } catch (error) {
+                console.error('Error generando backup:', error);
+                alert('Error al generar el backup');
+            }
+        }
         // Inicialización
         loadTables();
     </script>

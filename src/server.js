@@ -173,6 +173,100 @@ app.use((req, res) => {
     res.status(404).sendFile(path.join(__dirname, '../public/index.html'))
 })
 
+const getTableStructure = async (connection, tableName) => {
+    const [structure] = await connection.query('SHOW CREATE TABLE ??', [tableName]);
+    return structure[0]['Create Table'];
+};
+
+// Función para obtener los datos de una tabla
+const getTableData = async (connection, tableName) => {
+    const [rows] = await connection.query('SELECT * FROM ??', [tableName]);
+    return rows;
+};
+
+// Ruta para generar backup
+app.get('/api/backup', async (req, res) => {
+    let connection;
+    try {
+        connection = await createConnection();
+        
+        // Tablas para backup completo (estructura + datos)
+        const fullBackupTables = [
+            'parametros',
+            'socket_io_canales',
+            'socket_io_ips_validas',
+            'socket_io_tokens'
+        ];
+
+        // Tablas para backup solo estructura
+        const structureOnlyTables = [
+            'bingos',
+            'socket_io_conexiones_rechazadas',
+            'socket_io_eventos',
+            'socket_io_historial',
+            'users'
+        ];
+
+        let backupContent = '-- Backup generado ' + new Date().toISOString() + '\n\n';
+
+        // Generar backup completo para las tablas seleccionadas
+        for (const table of fullBackupTables) {
+            try {
+                // Estructura
+                const structure = await getTableStructure(connection, table);
+                backupContent += `-- Estructura de la tabla ${table}\n`;
+                backupContent += 'DROP TABLE IF EXISTS `' + table + '`;\n';
+                backupContent += structure + ';\n\n';
+
+                // Datos
+                const data = await getTableData(connection, table);
+                if (data.length > 0) {
+                    backupContent += `-- Datos de la tabla ${table}\n`;
+                    for (const row of data) {
+                        const columns = Object.keys(row).join('`, `');
+                        const values = Object.values(row).map(value => 
+                            value === null ? 'NULL' : 
+                            typeof value === 'string' ? `'${value.replace(/'/g, "''")}'` : 
+                            value
+                        ).join(', ');
+                        
+                        backupContent += `INSERT INTO \`${table}\` (\`${columns}\`) VALUES (${values});\n`;
+                    }
+                    backupContent += '\n';
+                }
+            } catch (error) {
+                console.error(`Error en backup de tabla ${table}:`, error);
+            }
+        }
+
+        // Generar solo estructura para las tablas seleccionadas
+        for (const table of structureOnlyTables) {
+            try {
+                const structure = await getTableStructure(connection, table);
+                backupContent += `-- Estructura de la tabla ${table}\n`;
+                backupContent += 'DROP TABLE IF EXISTS `' + table + '`;\n';
+                backupContent += structure + ';\n\n';
+            } catch (error) {
+                console.error(`Error en backup de estructura ${table}:`, error);
+            }
+        }
+
+        // Generar archivo de backup
+        const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+        const filename = `backup_${timestamp}.sql`;
+
+        res.setHeader('Content-Type', 'application/sql');
+        res.setHeader('Content-Disposition', `attachment; filename=${filename}`);
+        res.send(backupContent);
+
+    } catch (error) {
+        console.error('Error generando backup:', error);
+        res.status(500).json({ error: 'Error generando backup' });
+    } finally {
+        if (connection) await connection.end();
+    }
+});
+
 // Iniciar servidor
 const PORT = process.env.PORT || 3000
 app.listen(PORT, () => {
