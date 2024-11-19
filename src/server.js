@@ -1,4 +1,4 @@
-const mysql = require('mysql2');
+import mysql from 'mysql2';
 
 // Crear conexión usando las variables de entorno de Railway
 const connection = mysql.createConnection({
