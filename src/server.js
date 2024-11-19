@@ -11,18 +11,21 @@ const PORT = process.env.PORT || 3000
 const createUsersTable = async () => {
   let connection;
   try {
+    console.log('📝 Iniciando creación de tabla users...')
     connection = await createConnection()
-    
-    // Verificar si la tabla existe
+    console.log('✅ Conexión establecida')
+
+    console.log('🔍 Verificando si existe la tabla users...')
     const [tables] = await connection.query(`
       SELECT TABLE_NAME 
       FROM information_schema.TABLES 
-      WHERE TABLE_NAME = 'users'
+      WHERE TABLE_SCHEMA = 'railway'
+      AND TABLE_NAME = 'users'
     `)
-    
+
     if (tables.length === 0) {
-      // Si no existe, crear la tabla
-      await connection.query(`
+      console.log('📦 La tabla no existe, procediendo a crearla...')
+      const createTableSQL = `
         CREATE TABLE users (
           id INT AUTO_INCREMENT PRIMARY KEY,
           username VARCHAR(50) NOT NULL UNIQUE,
@@ -33,17 +36,32 @@ const createUsersTable = async () => {
           last_login TIMESTAMP NULL,
           is_active BOOLEAN DEFAULT true,
           role ENUM('admin', 'user') DEFAULT 'user'
-        )
-      `)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+      `
+      console.log('SQL a ejecutar:', createTableSQL)
+      
+      await connection.query(createTableSQL)
       console.log('✅ Tabla users creada exitosamente')
     } else {
       console.log('ℹ️ La tabla users ya existe')
     }
+
+    // Verificar que la tabla se creó
+    const [tablesAfter] = await connection.query('SHOW TABLES')
+    console.log('📊 Tablas en la base de datos:', tablesAfter)
+
   } catch (error) {
-    console.error('❌ Error:', error.message)
+    console.error('❌ Error al crear tabla:', error.message)
+    console.error('Stack trace:', error.stack)
+    throw error
   } finally {
     if (connection) {
-      await connection.end()
+      try {
+        await connection.end()
+        console.log('🔌 Conexión cerrada correctamente')
+      } catch (err) {
+        console.error('Error al cerrar la conexión:', err)
+      }
     }
   }
 }
@@ -72,6 +90,19 @@ app.get('/tables', async (req, res) => {
     if (connection) {
       await connection.end()
     }
+  }
+})
+
+// Ruta para forzar la creación de la tabla users
+app.post('/create-users-table', async (req, res) => {
+  try {
+    await createUsersTable()
+    res.json({ message: 'Proceso de creación de tabla completado' })
+  } catch (error) {
+    res.status(500).json({
+      error: 'Error al crear tabla users',
+      details: error.message
+    })
   }
 })
 
@@ -106,9 +137,19 @@ app.get('/', (req, res) => {
     message: 'API funcionando',
     endpoints: {
       listTables: '/tables',
-      tableStructure: '/table/:name'
+      tableStructure: '/table/:name',
+      createUsersTable: '/create-users-table'
     }
   })
 })
 
-// Inicializar base de datos y ar
+// Iniciar servidor
+app.listen(PORT, async () => {
+  console.log(`🚀 Servidor corriendo en puerto ${PORT}`)
+  try {
+    console.log('🏗️ Iniciando creación de tabla users...')
+    await createUsersTable()
+  } catch (error) {
+    console.error('⚠️ Error durante la inicialización:', error)
+  }
+})
