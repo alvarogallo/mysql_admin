@@ -1,27 +1,21 @@
-// src/server.js
-import express from 'express'
-import createConnection from './config/database.js'
+const mysql = require('mysql2');
 
-const app = express()
-app.use(express.json())
+// Crear conexión usando las variables de entorno de Railway
+const connection = mysql.createConnection({
+    host: process.env.MYSQLHOST,
+    user: process.env.MYSQLUSER,
+    password: process.env.MYSQLPASSWORD,
+    database: process.env.MYSQLDATABASE,
+    port: process.env.MYSQLPORT,
+});
 
-const PORT = process.env.PORT || 3000
-
-const startServer = async () => {
-  try {
-    // Intentar conectar a la base de datos
-    await createConnection()
-    
-    // Iniciar el servidor
-    app.listen(PORT, () => {
-      console.log(`🚀 Servidor corriendo en puerto ${PORT}`)
-    })
-  } catch (error) {
-    console.error('❌ Error al iniciar el servidor:', error.message)
-    process.exit(1)
-  }
-}
-
-startServer()
-
-export default app
+// Intentar conectar
+connection.connect((err) => {
+    if (err) {
+        console.error('❌ Conexión fallida:', err.message);
+        process.exit(1); // Salir con error
+    } else {
+        console.log('✅ Conexión exitosa');
+        process.exit(0); // Salir con éxito
+    }
+});
