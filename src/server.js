@@ -7,49 +7,59 @@ app.use(express.json())
 
 const PORT = process.env.PORT || 3000
 
-// Ruta de prueba
-app.get('/', (req, res) => {
-  res.json({ message: 'API funcionando' })
-})
-
-// Ruta para probar la conexión a la base de datos
-app.get('/test-db', async (req, res) => {
+// Ruta para listar tablas
+app.get('/tables', async (req, res) => {
   try {
     const connection = await createConnection()
-    const [rows] = await connection.query('SELECT 1 + 1 as result')
+    const [rows] = await connection.query('SHOW TABLES')
     await connection.end()
-    res.json({ 
-      message: 'Conexión exitosa', 
-      result: rows[0].result,
-      dbVars: {
-        host: process.env.MYSQLHOST || 'no definido',
-        port: process.env.MYSQLPORT || 'no definido',
-        user: process.env.MYSQLUSER || 'no definido',
-        database: process.env.MYSQL_DATABASE || 'no definido',
-        password_exists: !!process.env.MYSQL_ROOT_PASSWORD
-      }
+    
+    // Formatear la respuesta
+    const tables = rows.map(row => Object.values(row)[0])
+    
+    res.json({
+      message: 'Tablas en la base de datos',
+      tables,
+      count: tables.length
     })
   } catch (error) {
-    res.status(500).json({ 
-      error: error.message,
-      dbVars: {
-        host: process.env.MYSQLHOST || 'no definido',
-        port: process.env.MYSQLPORT || 'no definido',
-        user: process.env.MYSQLUSER || 'no definido',
-        database: process.env.MYSQL_DATABASE || 'no definido',
-        password_exists: !!process.env.MYSQL_ROOT_PASSWORD
-      }
+    res.status(500).json({
+      error: 'Error al listar tablas',
+      details: error.message
     })
   }
 })
 
+// Ruta para ver estructura de una tabla específica
+app.get('/table/:name', async (req, res) => {
+  try {
+    const connection = await createConnection()
+    const [rows] = await connection.query('DESCRIBE ??', [req.params.name])
+    await connection.end()
+    
+    res.json({
+      message: `Estructura de la tabla ${req.params.name}`,
+      columns: rows
+    })
+  } catch (error) {
+    res.status(500).json({
+      error: `Error al obtener estructura de ${req.params.name}`,
+      details: error.message
+    })
+  }
+})
+
+// Ruta base
+app.get('/', (req, res) => {
+  res.json({
+    message: 'API funcionando',
+    endpoints: {
+      listTables: '/tables',
+      tableStructure: '/table/:name'
+    }
+  })
+})
+
 app.listen(PORT, () => {
   console.log(`Servidor corriendo en puerto ${PORT}`)
-  console.log('Variables de entorno detectadas:', {
-    MYSQLHOST: process.env.MYSQLHOST || 'no definido',
-    MYSQLPORT: process.env.MYSQLPORT || 'no definido',
-    MYSQLUSER: process.env.MYSQLUSER || 'no definido',
-    MYSQL_DATABASE: process.env.MYSQL_DATABASE || 'no definido',
-    MYSQL_ROOT_PASSWORD: !!process.env.MYSQL_ROOT_PASSWORD
-  })
 })
