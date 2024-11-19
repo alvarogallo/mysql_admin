@@ -4,17 +4,14 @@ import mysql from 'mysql2/promise'
 const createConnection = async () => {
   try {
     const config = {
-      host: 'autorack.proxy.rlwy.net',
-      port: 11702,
-      user: 'root',
-      password: 'fIMIPIsVpwbKUVKkJRNWxidyxxkCowSW', // Aquí pon el MYSQL_ROOT_PASSWORD que te da Railway
-      database: 'railway'
+      host: process.env.MYSQL_HOST,
+      port: process.env.MYSQL_PORT,
+      user: process.env.MYSQL_USER,
+      password: process.env.MYSQL_PASSWORD,
+      database: process.env.MYSQL_DATABASE
     }
     
-    console.log('⚙️ Intentando conectar con configuración:', {
-      ...config,
-      password: '****' // Ocultamos la contraseña en los logs
-    })
+    console.log('⚙️ Intentando conectar a la base de datos...')
 
     const connection = await mysql.createConnection(config)
     
