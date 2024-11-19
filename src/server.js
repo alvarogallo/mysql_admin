@@ -1,37 +1,11 @@
-import mysql from 'mysql2';
+// Lee la variable de entorno MYSQLHOST
+const mysqlHost = process.env.MYSQLHOST;
 
-// Verifica que las variables de entorno estén configuradas
-const requiredEnvVars = [
-    'MYSQLHOST',
-    'MYSQLUSER',
-    'MYSQLPASSWORD',
-    'MYSQLDATABASE',
-    'MYSQLPORT',
-];
-
-for (const varName of requiredEnvVars) {
-    if (!process.env[varName]) {
-        console.error(`❌ Faltante: la variable de entorno ${varName} no está configurada.`);
-        process.exit(1); // Salir con error si falta una variable
-    }
+// Verifica si está definida
+if (!mysqlHost) {
+    console.error('❌ La variable de entorno MYSQLHOST no está definida.');
+    process.exit(1); // Salir con error
+} else {
+    console.log(`✅ MYSQLHOST está definido como: ${mysqlHost}`);
+    process.exit(0); // Salir con éxito
 }
-
-// Crear conexión usando las variables de entorno
-const connection = mysql.createConnection({
-    host: process.env.MYSQLHOST,
-    user: process.env.MYSQLUSER,
-    password: process.env.MYSQLPASSWORD,
-    database: process.env.MYSQLDATABASE,
-    port: parseInt(process.env.MYSQLPORT, 10),
-});
-
-// Intentar conectar
-connection.connect((err) => {
-    if (err) {
-        console.error('❌ Conexión fallida:', err.message);
-        process.exit(1);
-    } else {
-        console.log('✅ Conexión exitosa');
-        process.exit(0);
-    }
-});
