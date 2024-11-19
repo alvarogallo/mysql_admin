@@ -14,22 +14,12 @@
                 <div class="flex items-center">
                     <span class="text-xl font-semibold" id="welcomeMessage">Dashboard</span>
                 </div>
+                <div class="flex items-center">
+                    <button onclick="logout()" class="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded">
+                        Cerrar Sesión
+                    </button>
+                </div>
             </div>
-        </div>
-        <div class="flex items-center space-x-4">
-            <a 
-                href="/api/backup" 
-                download
-                class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded flex items-center"
-            >
-                <span>Generar Backup</span>
-            </a>
-            <button 
-                onclick="logout()" 
-                class="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded"
-            >
-                Cerrar Sesión
-            </button>
         </div>
     </nav>
 
@@ -234,29 +224,8 @@
             window.location.href = '/';
         }
 
-    
-        async function generateBackup() {
-        try {
-            // Crear un elemento temporal para la descarga
-            const response = await fetch('/api/backup');
-            const blob = await response.blob();
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `backup_${new Date().toISOString().replace(/[:.]/g, '-')}.sql`;
-            document.body.appendChild(a);
-            a.click();
-            window.URL.revokeObjectURL(url);
-            document.body.removeChild(a);
-        } catch (error) {
-            console.error('Error generando backup:', error);
-            alert('Error al generar el backup');
-        }
         // Inicialización
         loadTables();
-
     </script>
-
-
 </body>
 </html>
