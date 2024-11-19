@@ -3,19 +3,20 @@ import mysql from 'mysql2/promise'
 
 const createConnection = async () => {
   try {
-    // Para debug - NO incluir en producción
-    console.log('Variables disponibles:', {
-      MYSQL_ROOT_PASSWORD: process.env.MYSQL_ROOT_PASSWORD || 'no disponible',
-      MYSQL_PASSWORD: process.env.MYSQL_PASSWORD || 'no disponible',
-      RAILWAY_ENVIRONMENT: process.env.RAILWAY_ENVIRONMENT || 'no disponible'
+    console.log('Variables de entorno detectadas:', {
+      DB_HOST: !!process.env.DB_HOST,
+      DB_USER: !!process.env.DB_USER,
+      DB_PASSWORD: !!process.env.DB_PASSWORD,
+      DB_NAME: !!process.env.DB_NAME,
+      DB_PORT: !!process.env.DB_PORT
     })
 
     const config = {
-      host: 'autorack.proxy.rlwy.net',
-      port: 11702,
-      user: 'root',
-      password: process.env.MYSQL_ROOT_PASSWORD, // Debe coincidir EXACTAMENTE con el nombre en Railway
-      database: 'railway'
+      host: process.env.DB_HOST || 'mysql',
+      port: process.env.DB_PORT || 3306,
+      user: process.env.DB_USER || 'root',
+      password: process.env.DB_PASSWORD,
+      database: process.env.DB_NAME || 'railway'
     }
     
     console.log('⚙️ Intentando conectar con configuración:', {
@@ -32,13 +33,6 @@ const createConnection = async () => {
     return connection
   } catch (error) {
     console.error('❌ Error al conectar con la base de datos:', error.message)
-    console.error('🔍 Detalles de configuración:', {
-      host_set: !!config.host,
-      port_set: !!config.port,
-      user_set: !!config.user,
-      password_set: !!config.password,
-      database_set: !!config.database
-    })
     throw error
   }
 }
