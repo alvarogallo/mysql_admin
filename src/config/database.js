@@ -4,11 +4,15 @@ import mysql from 'mysql2/promise'
 const createConnection = async () => {
   try {
     const config = {
-      host: process.env.MYSQL_HOST || 'mysql.railway.internal',  // o el host que te proporciona Railway
-      port: process.env.MYSQL_PORT || 11702, // o el puerto que te proporciona Railway
-      user: process.env.MYSQL_USER || 'root',
+      host: "autorack.proxy.rlwy.net",
+      port: 11702,
+      user: "root",
       password: process.env.MYSQL_ROOT_PASSWORD,
-      database: process.env.MYSQL_DATABASE || 'railway'
+      database: "railway",
+      ssl: {
+        rejectUnauthorized: false
+      },
+      connectTimeout: 20000
     }
     
     console.log('⚙️ Intentando conectar a MySQL:', {
@@ -24,12 +28,12 @@ const createConnection = async () => {
     return connection
   } catch (error) {
     console.error('❌ Error de conexión:', error.message)
-    console.error('Variables disponibles:', {
-      MYSQL_HOST: process.env.MYSQL_HOST,
-      MYSQL_PORT: process.env.MYSQL_PORT,
-      MYSQL_USER: process.env.MYSQL_USER,
-      MYSQL_DATABASE: process.env.MYSQL_DATABASE,
-      hasPassword: !!process.env.MYSQL_ROOT_PASSWORD
+    console.error('Detalles de configuración:', {
+      host: config.host,
+      port: config.port,
+      user: config.user,
+      database: config.database,
+      hasPassword: !!config.password
     })
     throw error
   }
