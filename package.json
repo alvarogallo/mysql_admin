@@ -1,20 +1,14 @@
 {
   "name": "mysql_admin",
   "version": "1.0.0",
-  "description": "Administrador de base de datos MySQL",
-  "main": "src/server.js",
   "type": "module",
   "scripts": {
     "start": "node src/server.js",
     "dev": "nodemon src/server.js"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
   "dependencies": {
-    "dotenv": "^16.0.3",
     "express": "^4.18.2",
-    "mysql2": "^2.3.3"
+    "mysql2": "^3.2.0"
   },
   "devDependencies": {
     "nodemon": "^2.0.22"
