@@ -16,11 +16,6 @@ app.use(express.json())
 app.use(express.urlencoded({ extended: true }))
 app.use(express.static(path.join(__dirname, '../public')))
 
-// Ruta base
-app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, '../public/index.html'))
-})
-
 // Ruta para el login
 app.post('/api/login', async (req, res) => {
     let connection;
@@ -59,7 +54,7 @@ app.post('/api/login', async (req, res) => {
     }
 })
 
-// Ruta para obtener las tablas
+// Listar todas las tablas
 app.get('/api/tables', async (req, res) => {
     let connection;
     try {
@@ -75,25 +70,99 @@ app.get('/api/tables', async (req, res) => {
     }
 })
 
-// Ruta para obtener la estructura de una tabla específica
-app.get('/api/tables/:name', async (req, res) => {
+// Obtener estructura de una tabla
+app.get('/api/tables/:table/structure', async (req, res) => {
     let connection;
     try {
         connection = await createConnection()
-        const [structure] = await connection.query('DESCRIBE ??', [req.params.name])
-        const [rows] = await connection.query('SELECT COUNT(*) as count FROM ??', [req.params.name])
-        
-        res.json({
-            message: `Estructura de la tabla ${req.params.name}`,
-            structure,
-            rowCount: rows[0].count
+        const [structure] = await connection.query('DESCRIBE ??', [req.params.table])
+        res.json({ structure })
+    } catch (error) {
+        res.status(500).json({ error: error.message })
+    } finally {
+        if (connection) await connection.end()
+    }
+})
+
+// Obtener datos de una tabla
+app.get('/api/tables/:table/data', async (req, res) => {
+    let connection;
+    try {
+        connection = await createConnection()
+        const [records] = await connection.query('SELECT * FROM ??', [req.params.table])
+        res.json({ records })
+    } catch (error) {
+        res.status(500).json({ error: error.message })
+    } finally {
+        if (connection) await connection.end()
+    }
+})
+
+// Insertar registro
+app.post('/api/tables/:table/data', async (req, res) => {
+    let connection;
+    try {
+        connection = await createConnection()
+        const [result] = await connection.query('INSERT INTO ?? SET ?', [req.params.table, req.body])
+        res.json({ 
+            success: true,
+            message: 'Registro creado exitosamente',
+            id: result.insertId 
         })
     } catch (error) {
-        console.error('Error al obtener estructura de tabla:', error)
-        res.status(500).json({
-            error: `Error al obtener estructura de ${req.params.name}`,
-            details: error.message
+        res.status(500).json({ error: error.message })
+    } finally {
+        if (connection) await connection.end()
+    }
+})
+
+// Actualizar registro
+app.put('/api/tables/:table/data/:id', async (req, res) => {
+    let connection;
+    try {
+        connection = await createConnection()
+        await connection.query('UPDATE ?? SET ? WHERE id = ?', [req.params.table, req.body, req.params.id])
+        res.json({ 
+            success: true,
+            message: 'Registro actualizado exitosamente'
         })
+    } catch (error) {
+        res.status(500).json({ error: error.message })
+    } finally {
+        if (connection) await connection.end()
+    }
+})
+
+// Eliminar registro
+app.delete('/api/tables/:table/data/:id', async (req, res) => {
+    let connection;
+    try {
+        connection = await createConnection()
+        await connection.query('DELETE FROM ?? WHERE id = ?', [req.params.table, req.params.id])
+        res.json({ 
+            success: true,
+            message: 'Registro eliminado exitosamente'
+        })
+    } catch (error) {
+        res.status(500).json({ error: error.message })
+    } finally {
+        if (connection) await connection.end()
+    }
+})
+
+// Buscar registros en una tabla
+app.get('/api/tables/:table/search', async (req, res) => {
+    let connection;
+    try {
+        connection = await createConnection()
+        const { field, value } = req.query
+        const [records] = await connection.query(
+            'SELECT * FROM ?? WHERE ?? LIKE ?',
+            [req.params.table, field, `%${value}%`]
+        )
+        res.json({ records })
+    } catch (error) {
+        res.status(500).json({ error: error.message })
     } finally {
         if (connection) await connection.end()
     }

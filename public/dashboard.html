@@ -7,102 +7,225 @@
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-gray-100">
-    <div class="min-h-screen">
-        <!-- Navbar -->
-        <nav class="bg-white shadow-lg">
-            <div class="max-w-7xl mx-auto px-4">
-                <div class="flex justify-between h-16">
-                    <div class="flex items-center">
-                        <span class="text-xl font-semibold" id="welcomeMessage">Dashboard</span>
-                    </div>
-                    <div class="flex items-center">
-                        <button 
-                            onclick="logout()"
-                            class="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded"
-                        >
-                            Cerrar Sesión
-                        </button>
-                    </div>
+    <!-- Navbar -->
+    <nav class="bg-white shadow-lg">
+        <div class="max-w-7xl mx-auto px-4">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center">
+                    <span class="text-xl font-semibold" id="welcomeMessage">Dashboard</span>
+                </div>
+                <div class="flex items-center">
+                    <button onclick="logout()" class="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded">
+                        Cerrar Sesión
+                    </button>
                 </div>
             </div>
-        </nav>
+        </div>
+    </nav>
 
-        <!-- Content -->
-        <div class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-            <div class="px-4 py-6 sm:px-0">
-                <div class="bg-white rounded-lg shadow p-6">
-                    <h2 class="text-2xl font-bold mb-4">Tablas de la Base de Datos</h2>
-                    <div class="overflow-x-auto">
-                        <table class="min-w-full table-auto">
-                            <thead class="bg-gray-50">
-                                <tr>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        Nombre de la Tabla
-                                    </th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        Acciones
-                                    </th>
-                                </tr>
-                            </thead>
-                            <tbody id="tablesBody" class="bg-white divide-y divide-gray-200">
-                                <!-- Las tablas se cargarán aquí -->
-                            </tbody>
-                        </table>
-                    </div>
+    <!-- Content -->
+    <div class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+        <!-- Lista de Tablas -->
+        <div class="bg-white rounded-lg shadow p-6 mb-6" id="tablesList">
+            <h2 class="text-2xl font-bold mb-4">Tablas de la Base de Datos</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <!-- Las tablas se cargarán aquí -->
+            </div>
+        </div>
+
+        <!-- Vista de Tabla -->
+        <div class="bg-white rounded-lg shadow p-6 hidden" id="tableView">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold" id="tableTitle">Tabla</h2>
+                <div>
+                    <button onclick="showTablesList()" class="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded mr-2">
+                        Volver
+                    </button>
+                    <button onclick="showAddForm()" class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">
+                        Agregar Registro
+                    </button>
                 </div>
+            </div>
+
+            <!-- Formulario Add/Edit -->
+            <div id="recordForm" class="hidden mb-6">
+                <form id="dataForm" class="space-y-4">
+                    <!-- Los campos se generarán dinámicamente -->
+                </form>
+            </div>
+
+            <!-- Tabla de registros -->
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50"></thead>
+                    <tbody class="bg-white divide-y divide-gray-200"></tbody>
+                </table>
             </div>
         </div>
     </div>
 
     <script>
-        // Verificar si el usuario está logueado
-        const user = JSON.parse(localStorage.getItem('user'))
-        if (!user) {
-            window.location.href = '/index.html'
-        }
+        let currentTable = '';
+        let tableStructure = [];
 
-        // Actualizar mensaje de bienvenida
-        document.getElementById('welcomeMessage').textContent = `Bienvenido, ${user.username}`
-
-        // Cargar las tablas
+        // Cargar lista de tablas
         async function loadTables() {
             try {
-                const response = await fetch('/api/tables')
-                const data = await response.json()
+                const response = await fetch('/api/tables');
+                const data = await response.json();
                 
-                const tablesBody = document.getElementById('tablesBody')
-                tablesBody.innerHTML = data.tables.map(table => `
-                    <tr class="hover:bg-gray-50">
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            ${table}
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                            <button 
-                                onclick="viewTable('${table}')"
-                                class="text-indigo-600 hover:text-indigo-900"
-                            >
-                                Ver Estructura
-                            </button>
-                        </td>
-                    </tr>
-                `).join('')
+                const tablesContainer = document.querySelector('#tablesList .grid');
+                tablesContainer.innerHTML = data.tables.map(table => `
+                    <div class="bg-gray-50 p-4 rounded-lg shadow hover:shadow-md transition-shadow">
+                        <h3 class="text-lg font-semibold mb-2">${table}</h3>
+                        <button 
+                            onclick="viewTable('${table}')"
+                            class="text-blue-600 hover:text-blue-800"
+                        >
+                            Ver Registros
+                        </button>
+                    </div>
+                `).join('');
             } catch (error) {
-                console.error('Error:', error)
+                console.error('Error:', error);
             }
         }
 
-        function viewTable(tableName) {
-            // Implementar vista de estructura de tabla
-            alert(`Ver estructura de tabla: ${tableName}`)
+        // Ver tabla específica
+        async function viewTable(tableName) {
+            currentTable = tableName;
+            document.getElementById('tablesList').classList.add('hidden');
+            document.getElementById('tableView').classList.remove('hidden');
+            document.getElementById('tableTitle').textContent = `Tabla: ${tableName}`;
+            
+            await loadTableStructure();
+            await loadTableData();
+        }
+
+        // Cargar estructura de la tabla
+        async function loadTableStructure() {
+            const response = await fetch(`/api/tables/${currentTable}/structure`);
+            const data = await response.json();
+            tableStructure = data.structure;
+            
+            // Configurar cabecera de la tabla
+            const thead = document.querySelector('thead');
+            thead.innerHTML = `
+                <tr>
+                    ${tableStructure.map(col => `
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            ${col.Field}
+                        </th>
+                    `).join('')}
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Acciones
+                    </th>
+                </tr>
+            `;
+        }
+
+        // Cargar datos de la tabla
+        async function loadTableData() {
+            const response = await fetch(`/api/tables/${currentTable}/data`);
+            const data = await response.json();
+            
+            const tbody = document.querySelector('tbody');
+            tbody.innerHTML = data.records.map(record => `
+                <tr>
+                    ${tableStructure.map(col => `
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            ${record[col.Field]}
+                        </td>
+                    `).join('')}
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <button onclick="editRecord(${record.id})" class="text-indigo-600 hover:text-indigo-900 mr-2">
+                            Editar
+                        </button>
+                        <button onclick="deleteRecord(${record.id})" class="text-red-600 hover:text-red-900">
+                            Eliminar
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        // Mostrar formulario de agregar
+        function showAddForm() {
+            const form = document.getElementById('dataForm');
+            form.innerHTML = `
+                ${tableStructure.map(col => !col.Field.includes('id') ? `
+                    <div>
+                        <label class="block text-gray-700 text-sm font-bold mb-2">
+                            ${col.Field}
+                        </label>
+                        <input 
+                            name="${col.Field}"
+                            type="${getInputType(col.Type)}"
+                            class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                            ${col.Null === 'NO' ? 'required' : ''}
+                        >
+                    </div>
+                ` : '').join('')}
+                <div class="flex justify-end space-x-2">
+                    <button type="button" onclick="hideForm()" class="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded">
+                        Cancelar
+                    </button>
+                    <button type="submit" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+                        Guardar
+                    </button>
+                </div>
+            `;
+            
+            form.onsubmit = handleSubmit;
+            document.getElementById('recordForm').classList.remove('hidden');
+        }
+
+        // Utilidades
+        function getInputType(sqlType) {
+            if (sqlType.includes('int')) return 'number';
+            if (sqlType.includes('date')) return 'date';
+            if (sqlType.includes('time')) return 'datetime-local';
+            return 'text';
+        }
+
+        function showTablesList() {
+            document.getElementById('tablesList').classList.remove('hidden');
+            document.getElementById('tableView').classList.add('hidden');
+            document.getElementById('recordForm').classList.add('hidden');
+        }
+
+        function hideForm() {
+            document.getElementById('recordForm').classList.add('hidden');
+        }
+
+        async function handleSubmit(e) {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            const data = Object.fromEntries(formData.entries());
+            
+            try {
+                const response = await fetch(`/api/tables/${currentTable}/data`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                
+                if (response.ok) {
+                    hideForm();
+                    await loadTableData();
+                }
+            } catch (error) {
+                console.error('Error:', error);
+            }
         }
 
         function logout() {
-            localStorage.removeItem('user')
-            window.location.href = '/index.html'
+            localStorage.removeItem('user');
+            window.location.href = '/';
         }
 
-        // Cargar tablas al iniciar
-        loadTables()
+        // Inicialización
+        loadTables();
     </script>
 </body>
 </html>
